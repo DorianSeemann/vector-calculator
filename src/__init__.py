@@ -1,0 +1,3 @@
+"""
+Core mathematical functions package
+"""
