@@ -41,6 +41,59 @@ from ..parsers.vector_formula_parser import VectorFormulaParser
 from .dynamic_vector_manager import DynamicVectorManager
 
 
+class HistoryControlWidget(QWidget):
+    """Widget for calculation history control buttons."""
+    
+    clearHistoryRequested = pyqtSignal()
+    saveHistoryRequested = pyqtSignal()
+    
+    def __init__(self, parent=None):
+        super().__init__(parent)
+        self.setupUI()
+        
+    def setupUI(self):
+        """Set up the history control buttons."""
+        layout = QHBoxLayout()
+        layout.setContentsMargins(5, 5, 5, 5)  # Add margins for visual separation
+        
+        # Clear History button
+        self.clear_history_btn = QPushButton("Clear History")
+        self.clear_history_btn.setMinimumWidth(130)
+        self.clear_history_btn.setFixedHeight(30)  # Fixed height to prevent deformation
+        self.clear_history_btn.setToolTip("Clear all calculation history")
+        self.clear_history_btn.clicked.connect(self.clearHistoryRequested.emit)
+        
+        # Save History button
+        self.save_history_btn = QPushButton("Save History")
+        self.save_history_btn.setMinimumWidth(130)
+        self.save_history_btn.setFixedHeight(30)  # Fixed height to prevent deformation
+        self.save_history_btn.setToolTip("Save calculation history to file")
+        self.save_history_btn.clicked.connect(self.saveHistoryRequested.emit)
+        
+        # Add buttons to layout
+        layout.addWidget(self.clear_history_btn)
+        layout.addWidget(self.save_history_btn)
+        layout.addStretch()  # Push buttons to the left
+        
+        self.setLayout(layout)
+        
+        # Set fixed height for the entire widget to prevent layout issues
+        self.setFixedHeight(40)
+    
+    def setButtonsEnabled(self, enabled):
+        """Enable or disable both buttons."""
+        self.clear_history_btn.setEnabled(enabled)
+        self.save_history_btn.setEnabled(enabled)
+    
+    def setClearEnabled(self, enabled):
+        """Enable or disable only the clear button."""
+        self.clear_history_btn.setEnabled(enabled)
+    
+    def setSaveEnabled(self, enabled):
+        """Enable or disable only the save button."""
+        self.save_history_btn.setEnabled(enabled)
+
+
 class Vector3DWidget(QWidget):
     """Widget for inputting a single 3D vector."""
     
@@ -310,11 +363,11 @@ class VectorCalculatorGUI(QMainWindow):
         separator_line.setFrameShadow(QFrame.Sunken)
         display_layout.addWidget(separator_line)
         
-        self.show_vectors_cb = QCheckBox("Show Vectors")
-        self.show_vectors_cb.setChecked(True)
-        
-        self.show_normal_cb = QCheckBox("Show Normal Vector")
+        self.show_normal_cb = QCheckBox("Show Normal Vectors")
         self.show_normal_cb.setChecked(True)
+        
+        self.show_vector_cb = QCheckBox("Show Vector")
+        self.show_vector_cb.setChecked(True)
         
         self.show_plane_cb = QCheckBox("Show Plane (if coplanar)")
         self.show_plane_cb.setChecked(True)
@@ -322,8 +375,8 @@ class VectorCalculatorGUI(QMainWindow):
         self.show_determinant_cb = QCheckBox("Show Determinant Info")
         self.show_determinant_cb.setChecked(True)
         
-        display_layout.addWidget(self.show_vectors_cb)
         display_layout.addWidget(self.show_normal_cb)
+        display_layout.addWidget(self.show_vector_cb)
         display_layout.addWidget(self.show_plane_cb)
         display_layout.addWidget(self.show_determinant_cb)
         
@@ -446,27 +499,20 @@ class VectorCalculatorGUI(QMainWindow):
         
         # Calculation history and results
         results_group = QGroupBox("Calculation History")
+        results_group.setMaximumHeight(450)  # FIXED: Limit entire group height to prevent button overflow
         results_layout = QVBoxLayout(results_group)
         
         self.solution_text = QTextEdit()
         self.solution_text.setMinimumHeight(200)
+        self.solution_text.setMaximumHeight(370)  # FIXED: Add maximum height to prevent unlimited growth
         self.solution_text.setReadOnly(True)
         self.solution_text.setPlaceholderText("Calculation history will appear here...\nEach formula and its result will be logged for reference.")
-        results_layout.addWidget(self.solution_text)
+        results_layout.addWidget(self.solution_text, 1)
         
-        # History controls
-        history_controls = QHBoxLayout()
-        self.clear_history_btn = QPushButton("Clear History")
-        self.clear_history_btn.setMinimumWidth(130)
-        self.save_history_btn = QPushButton("Save History")
-        self.save_history_btn.setMinimumWidth(130)
-        
-        history_controls.addWidget(self.clear_history_btn)
-        history_controls.addWidget(self.save_history_btn)
-        history_controls.addStretch()
-        
-        results_layout.addLayout(history_controls)
-        formula_layout.addWidget(results_group)
+        # History controls widget
+        self.history_controls = HistoryControlWidget(self)
+        results_layout.addWidget(self.history_controls, 0)  # No stretch for button widget
+        formula_layout.addWidget(results_group, 0)  # FIXED: Don't let results_group expand vertically
         
         layout.addWidget(formula_group)
         
@@ -536,8 +582,8 @@ class VectorCalculatorGUI(QMainWindow):
         self.mode_3d_rb.toggled.connect(self.toggle_2d_3d_mode)
         
         # Display option changes
-        self.show_vectors_cb.toggled.connect(self.update_plot)
         self.show_normal_cb.toggled.connect(self.update_plot)
+        self.show_vector_cb.toggled.connect(self.update_plot)
         self.show_plane_cb.toggled.connect(self.update_plot)
         self.show_determinant_cb.toggled.connect(self.update_plot)
         
@@ -551,8 +597,10 @@ class VectorCalculatorGUI(QMainWindow):
         self.calculate_current_btn.clicked.connect(self.calculate_current_formula)
         self.clear_formulas_btn.clicked.connect(self.clear_formula_input)
         self.add_to_plot_btn.clicked.connect(self.add_formula_result_to_vector_manager)
-        self.clear_history_btn.clicked.connect(self.clear_calculation_history)
-        self.save_history_btn.clicked.connect(self.save_calculation_history)
+        
+        # History control widget signals
+        self.history_controls.clearHistoryRequested.connect(self.clear_calculation_history)
+        self.history_controls.saveHistoryRequested.connect(self.save_calculation_history)
         
         # Quick formula buttons - basic operations
         self.quick_add_btn.clicked.connect(lambda: self.insert_formula("A + B"))
@@ -702,8 +750,8 @@ class VectorCalculatorGUI(QMainWindow):
             labels.append(result_info['label'])
         
         # Get display options - FIX: Swap the internal logic since the behavior was reversed
-        show_vectors = self.show_normal_cb.isChecked()   # SWAPPED: "Show Vectors" checkbox actually controls normal
-        show_normal = self.show_vectors_cb.isChecked()   # SWAPPED: "Show Normal Vector" checkbox actually controls vectors
+        show_vectors = self.show_vector_cb.isChecked()   # SWAPPED: "Show Vectors" checkbox actually controls normal
+        show_normal = self.show_normal_cb.isChecked()   # SWAPPED: "Show Normal Vector" checkbox actually controls vectors
         show_plane = self.show_plane_cb.isChecked()
         show_determinant = self.show_determinant_cb.isChecked()
         
@@ -727,8 +775,8 @@ class VectorCalculatorGUI(QMainWindow):
             vector_colors = [v['color'] for v in vector_data]
             
             # Get display options - FIX: Swap the internal logic since the behavior was reversed
-            show_vectors = self.show_normal_cb.isChecked()   # SWAPPED: "Show Vectors" checkbox actually controls normal
-            show_normal = self.show_vectors_cb.isChecked()   # SWAPPED: "Show Normal Vector" checkbox actually controls vectors
+            show_vectors = self.show_vector_cb.isChecked()
+            show_normal = self.show_normal_cb.isChecked()
             show_plane = self.show_plane_cb.isChecked()
             show_determinant = self.show_determinant_cb.isChecked()
             
@@ -1112,7 +1160,8 @@ class VectorCalculatorGUI(QMainWindow):
         self.plot_canvas_2d.ax.clear()
         self.plot_canvas_2d.setup_plot()
         
-        if vectors and show_vectors:
+        print(f"Show Vektors is {show_vectors}")
+        if vectors and (show_vectors is True):
             # Convert vectors to numpy arrays and ensure 2D
             np_vectors = []
             for i, v in enumerate(vectors):
