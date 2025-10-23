@@ -59,14 +59,14 @@ class HistoryControlWidget(QWidget):
         # Clear History button
         self.clear_history_btn = QPushButton("Clear History")
         self.clear_history_btn.setMinimumWidth(130)
-        self.clear_history_btn.setFixedHeight(30)  # Fixed height to prevent deformation
+        self.clear_history_btn.setFixedHeight(30)
         self.clear_history_btn.setToolTip("Clear all calculation history")
         self.clear_history_btn.clicked.connect(self.clearHistoryRequested.emit)
         
         # Save History button
         self.save_history_btn = QPushButton("Save History")
         self.save_history_btn.setMinimumWidth(130)
-        self.save_history_btn.setFixedHeight(30)  # Fixed height to prevent deformation
+        self.save_history_btn.setFixedHeight(30)
         self.save_history_btn.setToolTip("Save calculation history to file")
         self.save_history_btn.clicked.connect(self.saveHistoryRequested.emit)
         
@@ -499,12 +499,12 @@ class VectorCalculatorGUI(QMainWindow):
         
         # Calculation history and results
         results_group = QGroupBox("Calculation History")
-        results_group.setMaximumHeight(450)  # FIXED: Limit entire group height to prevent button overflow
+        results_group.setMaximumHeight(450)
         results_layout = QVBoxLayout(results_group)
         
         self.solution_text = QTextEdit()
         self.solution_text.setMinimumHeight(200)
-        self.solution_text.setMaximumHeight(370)  # FIXED: Add maximum height to prevent unlimited growth
+        self.solution_text.setMaximumHeight(370)
         self.solution_text.setReadOnly(True)
         self.solution_text.setPlaceholderText("Calculation history will appear here...\nEach formula and its result will be logged for reference.")
         results_layout.addWidget(self.solution_text, 1)
@@ -512,7 +512,7 @@ class VectorCalculatorGUI(QMainWindow):
         # History controls widget
         self.history_controls = HistoryControlWidget(self)
         results_layout.addWidget(self.history_controls, 0)  # No stretch for button widget
-        formula_layout.addWidget(results_group, 0)  # FIXED: Don't let results_group expand vertically
+        formula_layout.addWidget(results_group, 0)
         
         layout.addWidget(formula_group)
         
